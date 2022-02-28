@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text;
+using Newtonsoft.Json;
 
 Console.WriteLine("load iran_countries.json file...");
 var serializer = new JsonSerializer();
@@ -31,14 +32,14 @@ list_countries = list_state.GroupBy(p => p.province).Select(each => new Country
 Console.WriteLine("load geojson.json file...");
 
 //deserialize
-using (var sReader = new StreamReader(@"./geojson.json"))
+using (var sReader = new StreamReader(@"./Iran-County-Mrz.geojson.json"))
 using (var jReader = new JsonTextReader(sReader))
 {
     list_gojson = serializer.Deserialize<List<GeoJson>>(jReader);
 }
 if (list_gojson.Count == 0)
 {
-    Console.WriteLine("geojson.json is empty");
+    Console.WriteLine("Iran-County-Mrz.geojson.json is empty");
     return;
 }
 
@@ -49,7 +50,7 @@ var finded_geojson = new List<string>();
 
 string normalizeName(string str)
 {
-    return str.Replace("آ", "ا").Replace("ئ","ی").Replace(" ", "");
+    return str.Replace("آ", "ا").Replace("ئ", "ی").Replace(" ", "");
 }
 foreach (var each_country in list_countries)
 {
@@ -79,6 +80,31 @@ foreach (var each_country in list_countries)
     }
 }
 
+Console.WriteLine($"Normalizing all name of province name");
+
+using (var sReader = new StreamReader(@"./iranLow.js"))
+{
+    StringBuilder newContent = new StringBuilder();
+    var line = string.Empty;
+    var indexName_EN = 0;
+    while ((line = sReader.ReadLine()) != null)
+    {
+        indexName_EN = line.LastIndexOf("NAME_ENG");
+        if (indexName_EN != -1)
+        {
+            var templine = line.Substring(indexName_EN + 10);
+            var strName_EN = templine.Substring(0, templine.IndexOf(","));
+            var newStrName_EN = (strName_EN).Replace("Ä","a").Replace("ā", "a").Replace("-", "").Trim().Replace(" ", "_");
+            line = line.Replace(strName_EN, newStrName_EN);
+        }
+        newContent.AppendLine(line);
+    }
+    sReader.Dispose();
+
+    //overwrite
+    using (var sw = new StreamWriter(@"./iranLow.js"))
+        sw.Write(newContent);
+}
 question:
 
 Console.WriteLine($"Do you want to create scripts og geojson data for each file? (y/n)");
