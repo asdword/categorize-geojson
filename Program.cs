@@ -110,9 +110,11 @@ string replaceValueByName(string line, string fieldName, Func<string, string> ch
     if (indexName_EN != -1)
     {
         var templine = line.Substring(indexName_EN + fieldName.Length + 2);
-        var strName_EN = templine.Substring(0, templine.IndexOf(","));
+        var strName_EN = templine.Substring(1, templine.IndexOf(",") - 1);
         var newStrName_EN = changeValueAction(strName_EN);
-        line = line.Replace(strName_EN, newStrName_EN);
+        var old_str = $"\"{fieldName}\": {strName_EN}";
+        var new_str = $"\"{fieldName}\": {newStrName_EN}";
+        line = line.Replace(old_str, new_str);
     }
     return line;
 }
@@ -125,8 +127,11 @@ using (var sReader = new StreamReader(@"./iranLow.js"))
     {
         line = replaceValueByName(line, "NAME_ENG", (str) => str.Replace("Ä", "a").Replace("ā", "a").Replace("-", "").Trim().Replace(" ", "_"));
         var name_fa = list_countries.FirstOrDefault(p => line.Contains(p.province_en))?.name;
+
         if (name_fa != null)
         {
+            Console.WriteLine($"{name_fa}");
+
             line = replaceValueByName(line, "name", (str) => $"\"{name_fa}\"");
         }
         newContent.AppendLine(line);

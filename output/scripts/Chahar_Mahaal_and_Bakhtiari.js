@@ -1,1 +1,0 @@
-window.am5geodata_Chahar_Mahaal_and_Bakhtiari = (function () { var map = {"type":"FeatureCollection","features":[]}; return map; })();
