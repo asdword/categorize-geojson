@@ -5,8 +5,18 @@ Console.WriteLine("load iran_countries.json file...");
 var serializer = new JsonSerializer();
 var list_state = new List<State>();
 var list_countries = new List<Country>();
-var list_gojson = new List<GeoJson>();
+var gojson = new GeoJson();
+var list_gojson = new List<GeoJsonFeatures>();
 
+string normalizeNameFa(string str)
+{
+    return str.Replace("آ", "ا").Replace("ئ", "ی").Replace(" ", "");
+}
+
+string normalizeNameEn(string str)
+{
+    return str.Replace(" ", "_").Replace("-", "");
+}
 //deserialize
 using (var sReader = new StreamReader(@"./iran_countries.json"))
 using (var jReader = new JsonTextReader(sReader))
@@ -32,14 +42,15 @@ list_countries = list_state.GroupBy(p => p.province).Select(each => new Country
 Console.WriteLine("load geojson.json file...");
 
 //deserialize
-using (var sReader = new StreamReader(@"./Iran-County-Mrz.geojson.json"))
+using (var sReader = new StreamReader(@"./iran_city.json"))
 using (var jReader = new JsonTextReader(sReader))
 {
-    list_gojson = serializer.Deserialize<List<GeoJson>>(jReader);
+    gojson = serializer.Deserialize<GeoJson>(jReader);
+    list_gojson = gojson.features;
 }
 if (list_gojson.Count == 0)
 {
-    Console.WriteLine("Iran-County-Mrz.geojson.json is empty");
+    Console.WriteLine("iran_city.json is empty");
     return;
 }
 
@@ -48,33 +59,43 @@ Console.WriteLine("create output");
 System.IO.Directory.CreateDirectory(@"./output/geojson");
 var finded_geojson = new List<string>();
 
-string normalizeName(string str)
-{
-    return str.Replace("آ", "ا").Replace("ئ", "ی").Replace(" ", "");
-}
 foreach (var each_country in list_countries)
 {
-
     //find releated countries
     var geojson_country = list_gojson
         .Where(p =>
             each_country.state
                 .Exists(each =>
-                    p.properties.name != null &&
-                    normalizeName(p.properties.name).Contains(normalizeName(each.state))
+                    p.properties.ADM1_EN != null &&
+                    normalizeNameEn(p.properties.ADM1_EN).Contains(normalizeNameEn(each.province_en))
                 )
         ).ToList();
 
-    finded_geojson.AddRange(geojson_country.Select(p => p.properties.name).ToList());
+    finded_geojson.AddRange(geojson_country.Select(p => p.properties.ADM1_EN).ToList());
     Console.WriteLine($"create ./output/geojson/{each_country.province_en}.json file");
 
     using (var sw = new StreamWriter($@"./output/geojson/{each_country.province_en}.json"))
     using (JsonWriter writer = new JsonTextWriter(sw))
     {
+        var normalizeGeoJsonObject = geojson_country.Select(p => new
+        {
+            type = p.type,
+            geometry = p.geometry,
+            properties = new
+            {
+                province_en = p.properties.ADM1_EN,
+                province_fa = p.properties.ADM1_FA,
+                city_en = p.properties.ADM2_EN,
+                city_fa = p.properties.ADM2_FA,
+                name = p.properties.ADM2_FA,
+                id = p.properties.ADM2_PCODE
+            }
+        });
+
         var geojsonToWrite = new
         {
             type = "FeatureCollection",
-            features = geojson_country
+            features = normalizeGeoJsonObject
         };
         serializer.Serialize(writer, geojsonToWrite);
     }
@@ -82,6 +103,19 @@ foreach (var each_country in list_countries)
 
 Console.WriteLine($"Normalizing all name of province name");
 
+string replaceValueByName(string line, string fieldName, Func<string, string> changeValueAction)
+{
+
+    var indexName_EN = line.LastIndexOf(fieldName);
+    if (indexName_EN != -1)
+    {
+        var templine = line.Substring(indexName_EN + fieldName.Length + 2);
+        var strName_EN = templine.Substring(0, templine.IndexOf(","));
+        var newStrName_EN = changeValueAction(strName_EN);
+        line = line.Replace(strName_EN, newStrName_EN);
+    }
+    return line;
+}
 using (var sReader = new StreamReader(@"./iranLow.js"))
 {
     StringBuilder newContent = new StringBuilder();
@@ -89,20 +123,18 @@ using (var sReader = new StreamReader(@"./iranLow.js"))
     var indexName_EN = 0;
     while ((line = sReader.ReadLine()) != null)
     {
-        indexName_EN = line.LastIndexOf("NAME_ENG");
-        if (indexName_EN != -1)
+        line = replaceValueByName(line, "NAME_ENG", (str) => str.Replace("Ä", "a").Replace("ā", "a").Replace("-", "").Trim().Replace(" ", "_"));
+        var name_fa = list_countries.FirstOrDefault(p => line.Contains(p.province_en))?.name;
+        if (name_fa != null)
         {
-            var templine = line.Substring(indexName_EN + 10);
-            var strName_EN = templine.Substring(0, templine.IndexOf(","));
-            var newStrName_EN = (strName_EN).Replace("Ä","a").Replace("ā", "a").Replace("-", "").Trim().Replace(" ", "_");
-            line = line.Replace(strName_EN, newStrName_EN);
+            line = replaceValueByName(line, "name", (str) => $"\"{name_fa}\"");
         }
         newContent.AppendLine(line);
     }
     sReader.Dispose();
 
     //overwrite
-    using (var sw = new StreamWriter(@"./iranLow.js"))
+    using (var sw = new StreamWriter(@"./output/iranLow.js"))
         sw.Write(newContent);
 }
 question:
@@ -144,6 +176,6 @@ switch (inputstr)
 
 Console.WriteLine("summary of converts");
 Console.WriteLine("====================");
-var lost_geojson = list_gojson.Where(p => !finded_geojson.Exists(each => each == p.properties.name)).ToList();
+var lost_geojson = list_gojson.Where(p => !finded_geojson.Exists(each => each == p.properties.ADM1_EN)).ToList();
 Console.WriteLine("finded_geojson.Count: " + finded_geojson.Count);
 Console.WriteLine("lost_geojson.Count: " + lost_geojson.Count);
