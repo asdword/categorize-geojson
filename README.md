@@ -11,7 +11,7 @@ A simple program to separate the information (geojson) of each province in a sep
  - [geojson.io](http://geojson.io)
  - [Iran-County-Mrz.geojson](https://forum.osmiran.org/t/topic/146/4)
 
-## Authors
+## Author
 
 - [@asdword](https://github.com/asdword)
 
