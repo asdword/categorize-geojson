@@ -4,7 +4,7 @@
 A simple program to separate the information (geojson) of each province in a separate file
 
 
-## GeoJson Refrence
+## GeoJson References
 
  - [iran_city.json](https://raw.githubusercontent.com/akoweb/geojson/master/iran_city.json)
  - [iranLow.js](http://cdn.amcharts.com/lib/5/geodata/iranLow.js)
