@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Newtonsoft.Json;
 
 Console.WriteLine("load iran_countries.json file...");
@@ -138,7 +138,7 @@ using (var sReader = new StreamReader(@"./iranLow.js"))
     }
     sReader.Dispose();
 
-    //overwrite
+    //save result iranLow
     using (var sw = new StreamWriter(@"./output/iranLow.js"))
         sw.Write(newContent);
 }
