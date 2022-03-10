@@ -1,7 +1,7 @@
 
 # Categorize Geojson
 
-A simple program to separate the information (geojson) of each province in a separate file
+A simple program to separate the information (geojson) of each province in a separate file.[outputs](https://github.com/asdword/categorize-geojson/tree/main/output)
 
 
 ## GeoJson References
