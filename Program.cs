@@ -81,6 +81,7 @@ foreach (var each_country in list_countries)
         {
             type = p.type,
             geometry = p.geometry,
+            id = p.properties.ADM2_PCODE,
             properties = new
             {
                 province_en = p.properties.ADM1_EN,
